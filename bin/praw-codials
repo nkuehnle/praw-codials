@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+'''
+PRAW-CoDiaLS
+
+A very niche CLI tool for collecting links and their associated submission data
+to target domain names on specific subreddits. Built on-top of Bryce Boe's PRAW
+package.
+'''
+from praw_codials import \
+    CLI, CollectionJob, collect_links, ContentLibrary, time_delta_str
+import sys
+import datetime as dt
+import concurrent.futures
+from pathlib import Path
+import logging
+import yaml
+
+def main():
+    """
+    Consumes CLI arguments and generates CollectionJob instances and passes
+    them to a ProcessPoolExecutor to run collect_links()
+    """
+    # Collect arguments
+    args = CLI.parse_args()
+    
+    # Variables used to generate jobs.
+    verbose = not(args.quiet)
+    incl_cmts= not(args.nocomments)
+    o_auth = args.oauth
+    limit = args.limit
+    subs = args.subs.split(",")
+    domains = args.domains.split(",")
+    # Variables for saving output.        
+    out_path = Path(args.path)
+
+    logging.basicConfig(filename=out_path/'example.log',  level=logging.INFO)
+
+    # Determine which types of searches to perform.
+    sorts = []
+    if args.new:
+        sorts.append("new")
+    if args.controversial:
+        sorts.append("controversial")
+    if args.hot:
+        sorts.append("hot")
+    if args.top:
+        sorts.append(args.top)
+
+    # Check if valid sorting types have been defined. Then run.
+    if sorts == []:
+        sys.exit("Must provide at least one valid sorting argument." \
+            "See --help for information.")
+    else:
+        jobs = [] # Create list for storing the jobs.
+
+        if "," in o_auth:
+            client_id,client_secret,password,uname,uagent = o_auth.split(",")
+            api_keys = {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "password": password,
+                "username": uname,
+                "user_agent": uagent
+                }
+        else:
+            with open(o_auth) as yml_stream: 
+                    api_keys = yaml.load(yml_stream, Loader=yaml.SafeLoader)
+
+        # Determine how many individual jobs are needed and generate them.
+        job_id_cnt = 0
+        for sub in subs:
+            for sort in sorts:
+                job_id_cnt += 1
+                cj = CollectionJob(
+                    job_id = job_id_cnt,
+                    auth = api_keys,
+                    sub = sub,
+                    domains = domains,
+                    sort = sort,
+                    limit = limit,)
+                jobs.append(cj)
+        
+        num_jobs = len(jobs)
+
+        for j in jobs: # Update the number of jobs.
+            j.num_jobs = num_jobs
+
+        # Print initial starting info to terminal.
+        print(f"{num_jobs} scraping job(s) started.")
+        print(f"Loading {', '.join('/r/'+i for i in subs)}.")
+        print(f"Searching for links from: {', '.join(i for i in domains)}.")
+        
+        start = dt.datetime.now()
+        library = ContentLibrary([],[])
+        job_kwargs = {
+            'library': library,
+            'verbose': verbose,
+            'incl_cmts': incl_cmts
+            }
+        scrape = lambda x: collect_links(job=x, **job_kwargs)
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = executor.map(scrape, jobs)
+            # Adjust this as results are no longer neeeded.
+            for _ in results:
+                pass
+
+        end = dt.datetime.now()
+        print(f"{num_jobs} jobs completed in {time_delta_str(start, end)}")
+
+        # Save posts as CSV.
+        library.write_results(out_path=out_path, incl_cmts=incl_cmts)
+
+if __name__ == "__main__":
+    main()

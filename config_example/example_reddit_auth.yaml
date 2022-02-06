@@ -1,0 +1,8 @@
+# Fill in relevant details. User_agent can be anything.
+# Get a client ID/secret using a valid Reddit account
+# https://www.reddit.com/prefs/apps
+client_id: CLIENT_ID
+client_secret: CLIENT_SECRET
+password: PASSWORD
+user_agent: USER_AGENT
+username: USERNAME
