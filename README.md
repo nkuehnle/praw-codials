@@ -14,9 +14,13 @@ Recommended:
 $ pip install praw-codials
 ```
 
+Alternatives:
+```
+$ pip install praw_codials-1.0.0-py3-none-any.whl -r requirements.txt
+```
 
 ```
-$ pip install praw-codials.whl
+$ praw-codials-1.0.0.tar.gz -r requirements.txt
 ```
 
 
