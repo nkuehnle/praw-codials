@@ -19,11 +19,17 @@ Alternatives:
 Download the .whl file or .tar.gz file and then run the appropriate command.
 
 ```
-$ pip install praw_codials-1.0.0-py3-none-any.whl -r requirements.txt
+$ pip install praw_codials-1.0.1-py3-none-any.whl -r requirements.txt
 ```
 
 ```
-$ praw-codials-1.0.0.tar.gz -r requirements.txt
+$ praw-codials-1.0.1.tar.gz -r requirements.txt
+```
+
+You can also build a wheel locally from source to incorporate new changes.
+
+```
+python -r setup.py bdist_wheel
 ```
 
 ## Usage

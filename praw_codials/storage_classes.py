@@ -24,10 +24,12 @@ class LinkContent:
     submission_flair: Optional[str] = None
     submission_score: Optional[int] = None
     submission_upvote_ratio: Optional[float ] = None
+    submission_date: Optional[dt.datetime] = None
     comment_author: Optional[str] = None
     comment_id: Optional[str] = None
     comment_score: Optional[str] = None
     comment_body: Optional[str] = None
+    comment_date: Optional[dt.datetime] = None
 
 class ContentLibrary:
     def __init__(self,
@@ -80,6 +82,7 @@ class ContentLibrary:
                 'submission_flair': content.link_flair_text,
                 'submission_upvote_ratio': content.upvote_ratio,
                 'submission_score': content.score,
+                'submission_date': dt.utcfromtimestamp(content.created_utc),
                 'subreddit': subreddit,
             }
 
@@ -102,11 +105,13 @@ class ContentLibrary:
                     'submission_flair': parent.link_flair_text,
                     'submission_upvote_ratio': parent.upvote_ratio,
                     'submission_score': parent.score,
+                    'submission_date': dt.utcfromtimestamp(parent.created_utc),
                     'subreddit': subreddit,
                     'comment_id': content.id,
                     'comment_author': author,
                     'comment_score': content.score,
-                    'comment_body': str(content.body)
+                    'comment_body': str(content.body),
+                    'comment_date': dt.utcfromtimestamp(content.created_utc)
                     }
 
             links = []
@@ -145,17 +150,18 @@ class ContentLibrary:
         """
         date_str = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
         submissions_path = out_path / f'Submissions_{date_str}.csv'
-        cmts_path = out_path / f'Comments_{date_str}.csv'
         
         # Save submissions as CSV.
-        submissions_df = pd.DataFrame([i.__dict__ for i in self.submissions])
-        
         print(f"Writing submissions to {submissions_path}...")
+        submissions_df = pd.DataFrame([i.__dict__ for i in self.submissions])
+        submissions_df.drop(columns=['_type'], inplace=True)
         
         submissions_df.to_csv(submissions_path, sep=",")
 
         # Save comments as CSV, if requested.
         if incl_cmts == True:
+            cmts_path = out_path / f'Comments_{date_str}.csv'
             print(f"Writing comments to {cmts_path}")
             cmts_df = pd.DataFrame([i.__dict__ for i in self.comments])
+            cmts_df.drop(columns=['_type'], inplace=True)
             cmts_df.to_csv(cmts_path, sep=",")
