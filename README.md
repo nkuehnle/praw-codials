@@ -23,7 +23,7 @@ $ pip install praw_codials-1.0.3-py3-none-any.whl -r requirements.txt
 ```
 
 ```
-$ praw-codials-1.0.3.tar.gz -r requirements.txt
+$ pip install praw-codials-1.0.3.tar.gz -r requirements.txt
 ```
 
 You can also build a wheel locally from source to incorporate new changes.
