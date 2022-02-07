@@ -8,7 +8,7 @@ with open('README.md', 'r') as readme_file:
 
 setup(
     name='praw-codials',
-    version='1.0.2',
+    version='1.0.3',
     description='PRAW-Powered COmmunity & DomaIn tArgeted Link Scraper',
     long_description=long_description,
     long_description_content_type='text/markdown',

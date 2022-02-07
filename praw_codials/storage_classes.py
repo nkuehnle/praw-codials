@@ -1,21 +1,15 @@
 from typing import Optional, Union, List, Set
-from praw.models import Submission, Comment
+from praw.models.reddit.submission import Submission
+from praw.models.reddit.comment import Comment
 from dataclasses import dataclass
 import re
 from pathlib import Path
 import datetime as dt
 import pandas as pd
 
-
-URL_PATTERN = {
-    'pref': r'[\s\(](?:https?:\/\/)?(?:www\.)?',
-    'suff': r'\/[\w\-][\w\-]*\/?[\w\-]*\/?[\w\-]*'
-}
-
 @dataclass
 class LinkContent:
     """A dataclass for storing pertinent link content information"""
-    _type: str
     link: str
     submission_author: str
     submission_id: str
@@ -51,7 +45,7 @@ class ContentLibrary:
 
     def add(self,
             subreddit: str,
-            targets: List[str],
+            regex: List[str],
             content: Union[Submission, Comment],
             parent: Optional[Union[Submission, Comment]] = None):
         """Add item to the content library.
@@ -60,7 +54,7 @@ class ContentLibrary:
         ----------
         subreddit : str
             The name of the subbreddit the content was collected from.
-        targets : List[str]
+        regex : List[str]
             The URLs that were targetted in this search this search
         content : Union[Submission, Comment]
             The praw.models.Submission or praw.models.Comment instanc
@@ -74,7 +68,6 @@ class ContentLibrary:
 
         if isinstance(content, Submission):
             arguments = {
-                '_type': 'Submission',
                 'link': content.url,
                 'submission_author': author,
                 'submission_id': content.id,
@@ -82,7 +75,7 @@ class ContentLibrary:
                 'submission_flair': content.link_flair_text,
                 'submission_upvote_ratio': content.upvote_ratio,
                 'submission_score': content.score,
-                'submission_date': dt.utcfromtimestamp(content.created_utc),
+                'submission_date': content.created_utc,
                 'subreddit': subreddit,
             }
 
@@ -98,31 +91,33 @@ class ContentLibrary:
                 sub_author = parent.author.name
 
             arguments = {
-                    '_type': 'Comment',
                     'submission_author': sub_author,
                     'submission_id': parent.id,
                     'submission_title': parent.title,
                     'submission_flair': parent.link_flair_text,
                     'submission_upvote_ratio': parent.upvote_ratio,
                     'submission_score': parent.score,
-                    'submission_date': dt.utcfromtimestamp(parent.created_utc),
+                    'submission_date': parent.created_utc,
                     'subreddit': subreddit,
                     'comment_id': content.id,
                     'comment_author': author,
                     'comment_score': content.score,
                     'comment_body': str(content.body),
-                    'comment_date': dt.utcfromtimestamp(content.created_utc)
+                    'comment_date': content.created_utc
                     }
 
             links = []
             
-            for target in targets:
-                pattern = URL_PATTERN['pref'] + target + URL_PATTERN['suff']
-                links += re.findall(pattern, arguments['comment_body'])
+            for r in regex:
+                links += re.findall(r, arguments['comment_body'])
 
-            for link in links:
-                arguments['link'] = link
-                self.submissions.append(LinkContent(**arguments))
+            if any(links):
+                for link in links:
+                    arguments['link'] = link
+                    self.comments.append(LinkContent(**arguments))
+            else:
+                arguments['link'] = None
+                self.comments.append(LinkContent(**arguments))
 
     @property
     def unique_submissions(self) -> Set[str]:
@@ -154,8 +149,6 @@ class ContentLibrary:
         # Save submissions as CSV.
         print(f"Writing submissions to {submissions_path}...")
         submissions_df = pd.DataFrame([i.__dict__ for i in self.submissions])
-        submissions_df.drop(columns=['_type'], inplace=True)
-        
         submissions_df.to_csv(submissions_path, sep=",")
 
         # Save comments as CSV, if requested.
@@ -163,5 +156,4 @@ class ContentLibrary:
             cmts_path = out_path / f'Comments_{date_str}.csv'
             print(f"Writing comments to {cmts_path}")
             cmts_df = pd.DataFrame([i.__dict__ for i in self.comments])
-            cmts_df.drop(columns=['_type'], inplace=True)
             cmts_df.to_csv(cmts_path, sep=",")

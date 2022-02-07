@@ -30,24 +30,36 @@ def main():
     limit = args.limit
     subs = args.subs.split(",")
     domains = args.domains.split(",")
+
+    if args.regex != None:
+        regex = args.regex.split(",")
+    else:
+        regex = [d.replace('.', '\.') for d in domains]
+        pref = r'(?:https?:\/\/)?(?:www\.)?'
+        suff = r'\/?[^\s\)]*'
+        regex = [pref+r+suff for r in regex]
+
     # Variables for saving output.        
     out_path = Path(args.path)
 
-    logging.basicConfig(filename=out_path/'example.log',  level=logging.INFO)
+    log_start_dt = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
+    logging.basicConfig(
+                        filename=out_path/f'praw_codials_{log_start_dt}.log',
+                        level=logging.INFO)
 
     # Determine which types of searches to perform.
-    sorts = []
+    sorts = {}
     if args.new:
-        sorts.append("new")
+        sorts["new"] = None
     if args.controversial:
-        sorts.append("controversial")
+        sorts["controversial"] = args.controversial
     if args.hot:
-        sorts.append("hot")
+        sorts["hot"] = None
     if args.top:
-        sorts.append(args.top)
+        sorts["top"] = args.top
 
     # Check if valid sorting types have been defined. Then run.
-    if sorts == []:
+    if sorts == {}:
         sys.exit("Must provide at least one valid sorting argument." \
             "See --help for information.")
     else:
@@ -69,14 +81,16 @@ def main():
         # Determine how many individual jobs are needed and generate them.
         job_id_cnt = 0
         for sub in subs:
-            for sort in sorts:
+            for sort_type,sort_arg in sorts.items():
                 job_id_cnt += 1
                 cj = CollectionJob(
                     job_id = job_id_cnt,
                     auth = api_keys,
                     sub = sub,
                     domains = domains,
-                    sort = sort,
+                    regex = regex,
+                    sort_type = sort_type,
+                    sort_arg = sort_arg,
                     limit = limit,)
                 jobs.append(cj)
         
@@ -88,7 +102,12 @@ def main():
         # Print initial starting info to terminal.
         print(f"{num_jobs} scraping job(s) started.")
         print(f"Loading {', '.join('/r/'+i for i in subs)}.")
-        print(f"Searching for links from: {', '.join(i for i in domains)}.")
+        print(f"Searching for links from: {', '.join(i for i in domains)}.\n")
+        if incl_cmts:
+            cmt_msg = "Top-level comments will be matched to the following "
+            regex = '\n'.join(regex)
+            cmt_msg += f"regular expressions:\n{regex}\n"
+            print(cmt_msg)
         
         start = dt.datetime.now()
         library = ContentLibrary([],[])

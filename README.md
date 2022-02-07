@@ -19,11 +19,11 @@ Alternatives:
 Download the .whl file or .tar.gz file and then run the appropriate command.
 
 ```
-$ pip install praw_codials-1.0.1-py3-none-any.whl -r requirements.txt
+$ pip install praw_codials-1.0.3-py3-none-any.whl -r requirements.txt
 ```
 
 ```
-$ praw-codials-1.0.1.tar.gz -r requirements.txt
+$ praw-codials-1.0.3.tar.gz -r requirements.txt
 ```
 
 You can also build a wheel locally from source to incorporate new changes.
@@ -60,8 +60,14 @@ _Python Reddit API Wrapper (PRAW) for Community & Domain-Targeted Link Scraping.
   -n, --new             Search new posts.
   -q, --quiet           Supress progress reports until jobs are complete.
   -x, --nocomments      Don't collect links in top-level commentsReduces performance limitations caused by the Reddit API
+  --regex REGEX         Override automatically generated regular expressions. NOTE: Assumes escape characters are provided in such as way that the shell
+                        pass a properly escaped literal string to python.
 </pre>
 
+By default, regular expressions will be generated for each provided domain in the form "{PREFIX}{DOMAIN}{SUFFIX}" where:
+* PREFIX = (?:https?:\/\/)?(?:www\.)?
+* SUFFIX = \.com\/?[^\s\)]*
+* DOMAIN is the original domain with all periods escaped
 
 ## Implementation Details
 By default, this tool will return URLs collected from both link submissions (the main post for each thread) and the top-level comments for either text or link submissions (self/link posts), but not their children. This can be optionally disabled at the command line (see below). In a future update, I plan to provide an argument for setting a comment recursion depth; however, any such features will drastically impact performance due to the Reddit API rate-limit.
