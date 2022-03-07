@@ -69,6 +69,8 @@ By default, regular expressions will be generated for each provided domain in th
 * SUFFIX = \.com\/?[^\s\)]*
 * DOMAIN is the original domain with all periods escaped
 
+A check is also performed to make sure that the sustring ']\(' is not included to remove substrings that span two parts of a markdown link. In these cases, only the right half of the link is collected.
+
 ## Implementation Details
 By default, this tool will return URLs collected from both link submissions (the main post for each thread) and the top-level comments for either text or link submissions (self/link posts), but not their children. This can be optionally disabled at the command line (see below). In a future update, I plan to provide an argument for setting a comment recursion depth; however, any such features will drastically impact performance due to the Reddit API rate-limit.
 
